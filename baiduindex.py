@@ -27,6 +27,7 @@ from image_slicer import ImageSlicer
 class BaiduIndexFetcher:
 
     DATE_FORMAT = '%Y%m%d'
+    BAIDU_DATE_FORMAT = '%Y-%m-%d'
     BAIDU_INDEX_URL = 'http://index.baidu.com/?tpl=trend&type=0'
     RESOURCE_DIR = 'resource/'
     DEFAULT_WORKING_DIR = 'baidu/'
@@ -138,7 +139,7 @@ class BaiduIndexFetcher:
             end_date = datetime.strptime(dates[1], BaiduIndexFetcher.DATE_FORMAT)
             if start_date > end_date:
                 raise AttributeError
-            return '|'.join(dates), (end_date - start_date).days
+            return '|'.join(dates), (end_date - start_date).days + 1
         except Exception as ex:
             print('输入错误：' + ex)
             return None
@@ -229,13 +230,13 @@ class BaiduIndexFetcher:
         # 常用js:http://www.cnblogs.com/hjhsysu/p/5735339.html
         # 搜索词：selenium JavaScript模拟鼠标悬浮
         x_0 = 1
-        y_0 = float(height / 2)
+        y_0 = 1
 
         # 储存数字的数组
         index = []
         # webdriver.ActionChains(driver).move_to_element().click().perform()
         # 只有移动位置xoyelement[2]是准确的
-        step = (float(width) - 2) / (days-1)
+        step = (float(width) - 1) / (days-1)
         for i in range(days):
             try:
                 # 坐标偏移量???
@@ -279,7 +280,9 @@ class BaiduIndexFetcher:
 
             except IndexError as err:
                 print(i, err)
-        return index
+        # return self.__sum_index_by_month(index)
+        return index, self.__sum_index_by_month(index)
+
 
     def __save_digit(self, digit, digit_image):
         directory = self.working_dir + str(digit)
@@ -317,7 +320,7 @@ class BaiduIndexFetcher:
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
         return int(min_loc[0] / 8)
 
-    def save_data(self, data):
+    def save_data(self, data_day, date_month):
         name = './data/'+self.keyword+'.xlsx'
         # f = open(name, 'w')
         # try:
@@ -330,24 +333,45 @@ class BaiduIndexFetcher:
         sheet = book.add_sheet(self.keyword, cell_overwrite_ok=True)
         sheet.write(0, 0, '百度指数')
         sheet.write(0, 1, self.keyword)
-        for i in range(len(data)):
-            sheet.write(i+1, 1, data[i][1])
-            sheet.write(i+1, 0, data[i][0])
+        for i in range(len(data_day)):
+            sheet.write(i+1, 1, data_day[i][1])
+            sheet.write(i+1, 0, data_day[i][0])
+        line = 1
+        for ele in date_month:
+            sheet.write(line, 2, ele[0].strftime(BaiduIndexFetcher.BAIDU_DATE_FORMAT))
+            sheet.write(line, 3, ele[1])
+            line += 1
         book.save(name)
+
+    @staticmethod
+    def __sum_index_by_month(index_data):
+        monthly_sum = 0
+        pre_date = None
+        for data in index_data:
+            cur_date = datetime.strptime(data[0][:10], BaiduIndexFetcher.BAIDU_DATE_FORMAT)
+            if pre_date is None:
+                pre_date = cur_date
+            if cur_date.month != pre_date.month:
+                yield pre_date, monthly_sum
+                pre_date = cur_date
+                monthly_sum = data[1]
+            else:
+                monthly_sum += data[1]
+        yield pre_date, monthly_sum
 
 if __name__ == "__main__":
 
     baidu_index_fetcher = BaiduIndexFetcher()
     while 1:
-        index = baidu_index_fetcher.get_index()
-        if index is False:
+        [index_day, index_month] = baidu_index_fetcher.get_index()
+        if index_day is False:  # 关键词未收录
             continue
-        if index is None:
+        if index_day is None:
             break
-        for ele in index:
+        for ele in index_day:
             print(ele)
         is_write = input('如需要保存数据则输入1, 数据文件将以关键字命名保存到项目目录下的data文件夹下, 否则输入0： ')
         if is_write:
-            baidu_index_fetcher.save_data(index)
+            baidu_index_fetcher.save_data(index_day, index_month)
 
 
