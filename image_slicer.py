@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import numpy
 from PIL import Image
 from scipy.misc import imsave
@@ -15,7 +13,7 @@ class ImageSlicer:
 
     # 横切
     @staticmethod
-    def __horizontal_cut(digit_array):  # 找到两个端点
+    def horizontal_cut(digit_array):
         row_sums = []
         for i in range(0, len(digit_array[0])):
             row_sums.append(sum(digit_array[:, i]))
@@ -23,7 +21,7 @@ class ImageSlicer:
         start = 0
         end = 0
         for i in range(len(row_sums) - 1):
-            if row_sums[i] == 0 and row_sums[i + 1] != 0:  # 中间有0可能产生干扰
+            if row_sums[i] == 0 and row_sums[i + 1] != 0:
                 start = i + 1
             elif row_sums[i] != 0 and row_sums[i + 1] == 0:
                 end = i + 1
@@ -50,70 +48,51 @@ class ImageSlicer:
                     numpy_array[i][j] = 0
         return numpy_array
 
-    @staticmethod
-    def __search_colon(sarray, spos, epos):
-        colon = []
-        for i in range(len(spos)):
-            total_pixel = 0
-            if epos[i] - spos[i] == 1 and sarray[spos[i]] == 2:  # 如果只有1列且含两个像素
-                for t in range(spos[i]-5, epos[i]+5):
-                    total_pixel = total_pixel + sarray[t]
-                if total_pixel == 2:  # 这一列的前后三列为空白
-                    colon.append(i)
-            if epos[i] - spos[i] == 2 and sarray[spos[i]] <=2 and sarray[spos[i]+1] <=2:  # 如果有两列且每列最多两像素
-                for t in range(spos[i]-3, epos[i]+3):
-                    total_pixel = total_pixel + sarray[t]
-                if total_pixel == sarray[spos[i]] + sarray[spos[i]+1]:  # 这两列前后三列为空白
-                    colon.append(i)
-        return colon
-
     def pretreatment(self, image_file):
 
         image_array = ImageSlicer.__binarize_image(self.working_dir,
                                                    image_file,
                                                    ImageSlicer.TEMP_BINARY_IMAGE_PREFIX)
         im1 = numpy.where(image_array > 128, 1, 0)  # binarized array
-        # im1 = im1.transpose()
-        #
-        # # 先纵切 start_pos, end_pos列表分别是一个个的切割起点和终点
-        # column_sums = []
-        # start_pos = []
-        # end_pos = []
-        # colon = []
-        # for i in range(0, len(im1)):
-        #     column_sums.append(sum(im1[i]))
-        #
-        # if column_sums[0] != 0:
-        #     start_pos.append(0)
-        # for i in range(len(column_sums) - 1):
-        #     if column_sums[i] == 0 and column_sums[i + 1] != 0:
-        #         start_pos.append(i + 1)
-        #     elif column_sums[i] != 0 and column_sums[i + 1] == 0:
-        #         end_pos.append(i + 1)
+        im1 = im1.transpose()
 
-        # 截取下来的图片数字前面都以冒号开始，冒号在图片中占2个像素（图片中可能会有其他的逗号或者什么也占2个像素）
-        # for i in range(0, len(start_pos)):
-        #     if end_pos[i]-start_pos[i] == 2:
-        #         colon.append(i)
-
+        # 先纵切 start_pos, end_pos列表分别是一个个的切割起点和终点
+        column_sums = []
         start_pos = []
         end_pos = []
-        column_sums = numpy.sum(im1, axis=0)
-        for i in range(column_sums.shape[0] -1):
-            if column_sums[i] == 0 and column_sums[i+1] != 0:
-                start_pos.append(i+1)
-            if column_sums[i] != 0 and column_sums[i+1] == 0:
-                end_pos.append(i+1)
-        colon = ImageSlicer.__search_colon(column_sums, start_pos, end_pos)
+        colon = []
+        for i in range(0, len(im1)):
+            column_sums.append(sum(im1[i]))
+        print(column_sums)
+
+        if column_sums[0] != 0:
+            start_pos.append(0)
+        for i in range(len(column_sums) - 1):
+            if column_sums[i] == 0 and column_sums[i + 1] != 0:
+                start_pos.append(i + 1)
+            elif column_sums[i] != 0 and column_sums[i + 1] == 0:
+                end_pos.append(i + 1)
+
+        # 截取下来的图片数字前面都以冒号开始,当搜索关键字是中文时，冒号占2个像素,关键字是英文时,占1个像素
+        print(start_pos)
+        print(end_pos)
+        for i in range(0, len(start_pos)):
+            if end_pos[i]-start_pos[i] == 1 or end_pos[i]-start_pos[i] == 2:
+                colon.append(i)
+        print(colon)
+
         image = Image.open(self.working_dir + ImageSlicer.TEMP_BINARY_IMAGE_PREFIX + image_file)
         digits = []
-        for i in range(colon[0]+1, len(start_pos)):   # d中可能不止一个数字，因此要判断下
+        for i in range(colon[-2]+1, len(start_pos)):   # d中可能不止一个数字，因此要判断下
             if 4 < end_pos[i] - start_pos[i] < 8:  # 排除其他的干扰，数字都在4-8个像素之间
                 try:
                     x_start = start_pos[i]
                     x_end = end_pos[i]
-                    y_start, y_end = self.__horizontal_cut(im1.transpose()[x_start:x_end])
+                    y_start, y_end = self.horizontal_cut(im1[x_start:x_end])
                     ima2 = image.crop((x_start, y_start, x_end, y_end))
+
+                    # imsave(self.working_dir + self.TEMP_CROPPED_IMAGE_PREFIX + image_file, ima2)
+
                     digits.append(ima2)
                 except Exception as ex:
                     print(ex)

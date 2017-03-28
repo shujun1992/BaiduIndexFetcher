@@ -321,7 +321,10 @@ class BaiduIndexFetcher:
         return int(min_loc[0] / 8)
 
     def save_data(self, data_day, date_month):
-        name = './data/'+self.keyword+'.xlsx'
+        DATA_DIR = './data/'
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR)
+        name = DATA_DIR + self.keyword +'.xlsx'
         # f = open(name, 'w')
         # try:
         #     for i in data:
