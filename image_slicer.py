@@ -63,7 +63,6 @@ class ImageSlicer:
         colon = []
         for i in range(0, len(im1)):
             column_sums.append(sum(im1[i]))
-        print(column_sums)
 
         if column_sums[0] != 0:
             start_pos.append(0)
@@ -74,13 +73,10 @@ class ImageSlicer:
                 end_pos.append(i + 1)
 
         # 截取下来的图片数字前面都以冒号开始,当搜索关键字是中文时，冒号占2个像素,关键字是英文时,占1个像素
-        print(start_pos)
-        print(end_pos)
         for i in range(0, len(start_pos)):
             if end_pos[i]-start_pos[i] == 1 or end_pos[i]-start_pos[i] == 2:
                 colon.append(i)
-        print(colon)
-
+        
         image = Image.open(self.working_dir + ImageSlicer.TEMP_BINARY_IMAGE_PREFIX + image_file)
         digits = []
         for i in range(colon[-2]+1, len(start_pos)):   # d中可能不止一个数字，因此要判断下
