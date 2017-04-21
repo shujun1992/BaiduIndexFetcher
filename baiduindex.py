@@ -25,7 +25,6 @@ from image_slicer import ImageSlicer
 
 
 class BaiduIndexFetcher:
-
     DATE_FORMAT = '%Y%m%d'
     BAIDU_DATE_FORMAT = '%Y-%m-%d'
     BAIDU_INDEX_URL = 'http://index.baidu.com/?tpl=trend&type=0'
@@ -164,7 +163,7 @@ class BaiduIndexFetcher:
 
         sel = int(input("查询7天请按0，30天请按1，自定义请按2："))
         while 1:
-            if sel == 0 or sel ==1 or sel == 2:
+            if sel == 0 or sel == 1 or sel == 2:
                 break
             else:
                 sel = int(input("非法输入！查询7天请按0,30天请按1，自定义请按2："))
@@ -230,13 +229,13 @@ class BaiduIndexFetcher:
         # 常用js:http://www.cnblogs.com/hjhsysu/p/5735339.html
         # 搜索词：selenium JavaScript模拟鼠标悬浮
         x_0 = 1
-        y_0 = 1
+        y_0 = 65
 
         # 储存数字的数组
         index = []
         # webdriver.ActionChains(driver).move_to_element().click().perform()
         # 只有移动位置xoyelement[2]是准确的
-        step = (float(width) - 1) / (days-1)
+        step = (float(width) - 1) / (days - 1)
         for i in range(days):
             try:
                 # 坐标偏移量???
@@ -254,7 +253,7 @@ class BaiduIndexFetcher:
                 # 找到图片大小
                 sizes = img_element.size
                 # 构造指数的位置
-                rangle = (int(locations['x']), int(locations['y'] + sizes['height']/2),
+                rangle = (int(locations['x']), int(locations['y'] + sizes['height'] / 2),
                           int(locations['x'] + sizes['width']), int(locations['y'] + sizes['height']))
                 # 截取当前浏览器
                 path = self.working_dir + str(i)
@@ -274,7 +273,7 @@ class BaiduIndexFetcher:
                 # out.save(path + 'zoom.jpg', 'png', quality=95)
 
                 # 图像识别
-                digits = self.image_slicer.pretreatment(str(i)+".png")
+                digits = self.image_slicer.pretreatment(str(i) + ".png")
                 number = BaiduIndexFetcher.recognize_number(digits, BaiduIndexFetcher.recognize_digit)
                 index.append((img_date.text, number))
 
@@ -282,7 +281,6 @@ class BaiduIndexFetcher:
                 print(i, err)
         # return self.__sum_index_by_month(index)
         return index, self.__sum_index_by_month(index)
-
 
     def __save_digit(self, digit, digit_image):
         directory = self.working_dir + str(digit)
@@ -295,7 +293,7 @@ class BaiduIndexFetcher:
         index = []
         for i in range(days):
             try:
-                digits = self.image_slicer.pretreatment(str(i)+".png")
+                digits = self.image_slicer.pretreatment(str(i) + ".png")
                 number = BaiduIndexFetcher.recognize_number(digits, BaiduIndexFetcher.recognize_digit)
                 index.append(number)
             except Exception as ex:
@@ -324,7 +322,7 @@ class BaiduIndexFetcher:
         DATA_DIR = './data/'
         if not os.path.exists(DATA_DIR):
             os.makedirs(DATA_DIR)
-        name = DATA_DIR + self.keyword +'.xlsx'
+        name = DATA_DIR + self.keyword + '.xlsx'
         # f = open(name, 'w')
         # try:
         #     for i in data:
@@ -337,8 +335,8 @@ class BaiduIndexFetcher:
         sheet.write(0, 0, '百度指数')
         sheet.write(0, 1, self.keyword)
         for i in range(len(data_day)):
-            sheet.write(i+1, 1, data_day[i][1])
-            sheet.write(i+1, 0, data_day[i][0])
+            sheet.write(i + 1, 1, data_day[i][1])
+            sheet.write(i + 1, 0, data_day[i][0])
         line = 1
         for ele in date_month:
             sheet.write(line, 2, ele[0].strftime(BaiduIndexFetcher.BAIDU_DATE_FORMAT))
@@ -362,6 +360,7 @@ class BaiduIndexFetcher:
                 monthly_sum += data[1]
         yield pre_date, monthly_sum
 
+
 if __name__ == "__main__":
 
     baidu_index_fetcher = BaiduIndexFetcher()
@@ -376,5 +375,3 @@ if __name__ == "__main__":
         is_write = input('如需要保存数据则输入1, 数据文件将以关键字命名保存到项目目录下的data文件夹下, 否则输入0： ')
         if is_write:
             baidu_index_fetcher.save_data(index_day, index_month)
-
-

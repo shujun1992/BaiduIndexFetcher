@@ -75,7 +75,7 @@ class ImageSlicer:
         # 截取下来的图片数字前面都以冒号开始,当搜索关键字是中文时，冒号占2个像素,关键字是英文时,占1个像素
         for i in range(0, len(start_pos)):
             if end_pos[i]-start_pos[i] == 1 or end_pos[i]-start_pos[i] == 2:
-                if column_sums[start_pos[i]] != 1:  #删除里面的逗号
+                if column_sums[start_pos[i]] != 1 and column_sums[start_pos[i]] != 3:  #删除里面的逗号
                     colon.append(i)
 
         image = Image.open(self.working_dir + ImageSlicer.TEMP_BINARY_IMAGE_PREFIX + image_file)
